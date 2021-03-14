@@ -6,4 +6,9 @@ router.get('/', function (req, res, next) {
 	res.send('Hello World!')
 });
 
+router.post('/', function (req, res, next) {
+	console.log(req.body);
+	res.send(req.body);
+});
+
 module.exports = router;
