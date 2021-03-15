@@ -11,6 +11,9 @@ import {
 
 import axios from 'axios';
 
+import { Container, CssBaseline, Avatar, Typography, TextField, FormControlLabel, Checkbox, Button, makeStyles } from '@material-ui/core'
+import LockOutlinedIcon from '@material-ui/icons/LockOutlined';
+
 // This example has 3 pages: a public page, a protected
 // page, and a login screen. In order to see the protected
 // page, you must first login. Pretty standard stuff.
@@ -170,25 +173,119 @@ function PublicPage() {
 }
 
 function ProtectedPage() {
-	return <h3>Protected</h3>;
+	return <h3>protec</h3>;
 }
+
+const useStyles = makeStyles((theme) => ({
+	paper: {
+		marginTop: theme.spacing(8),
+		display: 'flex',
+		flexDirection: 'column',
+		alignItems: 'center',
+	},
+	avatar: {
+		margin: theme.spacing(1),
+		backgroundColor: theme.palette.secondary.main,
+	},
+	form: {
+		width: '100%', // Fix IE 11 issue.
+		marginTop: theme.spacing(1),
+	},
+	submit: {
+		margin: theme.spacing(3, 0, 2),
+	},
+}));
 
 function LoginPage() {
 	let history = useHistory();
 	let location = useLocation();
 	let auth = useAuth();
 
+	const classes = useStyles();
+
 	let { from } = location.state || { from: { pathname: "/" } };
+
+	const [username, setUsername] = useState("");
+	const [password, setPassword] = useState("");
+
 	let login = () => {
+
+		//alert(username + ' ' + password)
+
+		axios.post("/users/login",
+			{
+				username: username,
+				password: password
+			})
+			// this is where we would store the data in the auth object
+			// idk how to use it tho
+			// i kinda wanna stop for tonight
+			// we got a good start
+			// you can keep going if you want or not
+			// ok just push ur changes
+			
+			.then(res => {
+				alert(JSON.stringify(res.data))
+				console.log(res);
+			}
+			);
+
 		auth.signin(() => {
 			history.replace(from);
 		});
 	};
 
 	return (
-		<div>
-			<p>You must log in to view the page at {from.pathname}</p>
-			<button onClick={login}>Log in</button>
-		</div>
+		<Container component="main" maxWidth="sm">
+			<CssBaseline />
+			<div className={classes.paper}>
+				<Typography component="h1" variant="h5">
+					You must log in to view the page at {from.pathname}
+				</Typography>
+				<Avatar className={classes.avatar}>
+					<LockOutlinedIcon />
+				</Avatar>
+				<Typography component="h1" variant="h5">
+					Sign in
+        			</Typography>
+				<TextField
+					variant="outlined"
+					margin="normal"
+					required
+					fullWidth
+					id="username"
+					label="Username"
+					name="username"
+					autoComplete="username"
+					autoFocus
+					value={username}
+					onChange={e => setUsername(e.target.value)}
+				/>
+				<TextField
+					variant="outlined"
+					margin="normal"
+					required
+					fullWidth
+					name="password"
+					label="Password"
+					type="password"
+					id="password"
+					autoComplete="current-password"
+					value={password}
+					onChange={e => setPassword(e.target.value)}
+				/>
+				<Button
+					type="submit"
+					fullWidth
+					variant="contained"
+					color="primary"
+					className={classes.submit}
+					onClick={() => login()}
+				>
+					Sign In
+				</Button>
+			</div>
+		</Container>
+
 	);
 }
