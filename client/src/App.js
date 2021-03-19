@@ -29,13 +29,12 @@ import LockOutlinedIcon from '@material-ui/icons/LockOutlined';
 // and you'll see you go back to the page you visited
 // just *before* logging in, the public page.
 
-export default function AuthExample() {
+export default function App() {
 	return (
 		<ProvideAuth>
 			<Router>
 				<div>
 					<AuthButton />
-
 					<ul>
 						<li>
 							<Link to="/public">Public Page</Link>
@@ -163,7 +162,7 @@ function PrivateRoute({ children, ...rest }) {
 function PublicPage() {
 	const [data, setData] = useState("not loaded");
 	useEffect(() => {
-		axios.get('/testAPI')
+		axios.get('/api/testAPI')
 			.then(res => {
 				console.log(res.data);
 				setData(res.data);
@@ -212,23 +211,11 @@ function LoginPage() {
 
 		//alert(username + ' ' + password)
 
-		axios.post("/users/login",
-			{
-				username: username,
-				password: password
-			})
-			// this is where we would store the data in the auth object
-			// idk how to use it tho
-			// i kinda wanna stop for tonight
-			// we got a good start
-			// you can keep going if you want or not
-			// ok just push ur changes
-			
+		axios.post("/api/users/login", { username: username, password: password })
 			.then(res => {
 				alert(JSON.stringify(res.data))
 				console.log(res);
-			}
-			);
+			});
 
 		auth.signin(() => {
 			history.replace(from);
