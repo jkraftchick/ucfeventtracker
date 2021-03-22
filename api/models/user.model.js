@@ -24,7 +24,9 @@ const UserSchema = new Schema({
 		type: String,
 		required: true,
 		enum: ["student", "admin", "superadmin"]
-	}
+	},
+	school: { type: Schema.Types.ObjectId, ref: 'school' },
+	rsos: [{ type: Schema.Types.ObjectId, ref: 'rso' }]
 });
 
 module.exports = mongoose.model('user', UserSchema);

@@ -1,9 +1,26 @@
 var express = require('express');
-var jwt = require('jsonwebtoken');
+var router = express.Router();
 
+var jwt = require('jsonwebtoken');
 const User = require('../models/user.model');
 
-var router = express.Router();
+const jwtconfig = require('../config/jwt.config');
+
+router.get("/self", (req, res, next) => {
+	let auth = req.headers.authorization;
+	if (!auth) return res.status(400).send("missing auth token");
+
+	let token = auth.split(' ')[1];
+
+	jwt.verify(token, jwtconfig.secret, async (err, decoded) => {
+		if (err) return res.status(400).send("invalid auth token");
+
+		let user = await User.findById(decoded._id);
+		console.log(user);
+
+		return res.send(user);
+	})
+})
 
 router.post('/login', async (req, res) => {
 	const { username, password } = req.body;
@@ -18,7 +35,7 @@ router.post('/login', async (req, res) => {
 			const match = password === user.password;
 			if (!match) return res.status(400).send('Invalid credentials');
 
-			jwt.sign({ _id: user._id }, 'secret', { expiresIn: '69 days' }, (err, token) => {
+			jwt.sign({ _id: user._id }, jwtconfig.secret, (err, token) => { //, { expiresIn: '69 days' }
 				if (err) return res.status(400).send(err);
 
 				return res.json({
@@ -69,13 +86,14 @@ router.post('/signup', async (req, res) => {
 					const savedUser = await newUser.save();
 					if (!savedUser) return res.status(400).send('Something went wrong saving the user');
 
-					jwt.sign({ _id: savedUser._id }, 'secret', { expiresIn: '69 days' }, (err, token) => {
+					jwt.sign({ _id: savedUser._id }, jwtconfig.secret, { expiresIn: '69 days' }, (err, token) => {
 						if (err) return res.status(400).send(err);
 
 						return res.status(200).json({
 							token,
 
 							user: {
+								username: savedUser.username,
 								firstName: savedUser.firstName,
 								lastName: savedUser.lastName,
 							}

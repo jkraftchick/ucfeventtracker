@@ -13,7 +13,9 @@ const RsoSchema = new Schema({
 		ref: 'user',
 		required: true
 	},
+	school: { type: Schema.Types.ObjectId, ref: 'school' },
 	students: [{ type: Schema.Types.ObjectId, ref: 'user' }],
+	events: [{ type: Schema.Types.ObjectId, ref: 'event' }]
 });
 
 module.exports = mongoose.model('rso', RsoSchema);
