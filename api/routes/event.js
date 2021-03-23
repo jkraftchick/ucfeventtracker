@@ -12,6 +12,21 @@ var Rsos = require('../models/rso.model');
 var Schools = require('../models/school.model');
 
 const levels = ["public", "school", "rso"];
+const keys = ['title', 'subtitle', 'description', 'location', 'starts', 'ends', 'contact_name', 'contact_phone', 'contact_email', 'url']
+
+const ensureAuth = (req, res, next) => {
+	let auth = req.headers.authorization;
+	if (!auth) return res.status(400).send("missing auth token");
+
+	let token = auth.split(' ')[1];
+
+	jwt.verify(token, jwtconfig.secret, async (err, decoded) => {
+		if (err) return res.status(400).send(err);
+
+		req.headers.authorization = decoded;
+		next()
+	})
+}
 
 router.get("/", async (req, res, next) => {
 	let auth = req.headers.authorization;
@@ -71,14 +86,14 @@ router.post("/", async (req, res, next) => {
 		}
 
 		if (access_type === 'rso') {
-			if (user.role !== 'superadmin' || !user.rsos.includes(access)) {
+			if (!user.rsos.includes(access)) {
 				return res.status(400).send("you must be apart of the rso you want to make the event for");
 			}
 
 			let rso = await Rsos.findById(access);
 
 			//console.log(rso.admin, user._id, rso.admin.toString() == user._id.toString());
-			if (user.role !== 'superadmin' || !rso.admin.equals(user._id)) {
+			if (!rso.admin.equals(user._id)) {
 				return res.status(400).send("you must be the rso admin to create an event");
 			}
 
@@ -99,7 +114,7 @@ router.post("/", async (req, res, next) => {
 
 			event.save();
 
-			Rsos.findByIdAndUpdate(access, { $push: { events: event._id } }, { useFindAndModify: false });
+			await Rsos.findByIdAndUpdate(access, { $push: { events: event._id } }, { useFindAndModify: false });
 
 			return res.send(event);
 		}
@@ -127,9 +142,7 @@ router.post("/", async (req, res, next) => {
 
 			event.save();
 
-			Schools.findByIdAndUpdate(access, { $push: { events: event._id } }, { useFindAndModify: false }, (err, res) => {
-				console.log(err, res);
-			});
+			await Schools.findByIdAndUpdate(access, { $push: { events: event._id } }, { useFindAndModify: false });
 
 			return res.send(event);
 		}
@@ -159,11 +172,53 @@ router.post("/", async (req, res, next) => {
 	})
 })
 
-router.put("/:id", async (req, res, next) => {
-	res.status(418).send("todo update");
+router.put("/:id", ensureAuth, async (req, res, next) => {
+	//const { title, subtitle, description, location, starts, ends, contact_name, contact_phone, contact_email, url } = req.body;
+
+	//let body = (req.body).filter(key => keys.includes(key));
+
+	// removes any keys that are not listed in const keys
+	// prob not strictly nessary as mongoose should handle this as well, but should 
+	// 		prevent changing anything we dont want changed (access or access_type)
+	let body = Object.keys(req.body)
+		.filter(key => keys.includes(key))
+		.reduce((res, key) => (res[key] = req.body[key], res), {});
+
+	Events.findByIdAndUpdate(req.params.id, { ...body }, { useFindAndModify: false, new: true }, (err, _res) => {
+		if (err) return res.status(400).send(err);
+
+		res.send(_res);
+	})
 })
 
-router.delete("/:id", async (req, res, next) => {
-	res.status(418).send("todo delete");
+router.delete("/:id", ensureAuth, async (req, res, next) => {
+
+	if (!req.params.id) return res.status(400).send("missing id");
+
+	let event = await Events.findByIdAndDelete(req.params.id);
+
+	if (!event) {
+		return res.status(400).send("cound not remove")
+	}
+
+	// Remove refrence from any documents containing event
+	if (event.access_type === "public") {
+		return res.send("done");
+	}
+	else if (event.access_type === "school") {
+		// remove refrence from school
+		await Schools.findByIdAndUpdate(event.access, { $pull: { events: event._id } }, { useFindAndModify: false });
+
+		return res.send("done");
+	}
+	else if (event.access_type === "rso") {
+		// remove refrence from school
+		await Rsos.findByIdAndUpdate(event.access, { $pull: { events: event._id } }, { useFindAndModify: false });
+
+		return res.send("done");
+	}
 })
+
+
+
 module.exports = router;

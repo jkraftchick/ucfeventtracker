@@ -51,9 +51,9 @@ router.post("/", async (req, res, next) => {
 
 		console.log(rso);
 
-		Schools.findByIdAndUpdate(school, { $push: { rsos: rso._id } }, { useFindAndModify: false, new: true }, (err, res) => {
-			console.log(err, res);
-		});
+		await Schools.findByIdAndUpdate(school, { $push: { rsos: rso._id } }, { useFindAndModify: false, new: true });
+		await Users.findByIdAndUpdate(decoded._id, { $push: { rsos: rso._id } }, { useFindAndModify: false, new: true });
+
 
 		return res.send(rso);
 
