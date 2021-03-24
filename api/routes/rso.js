@@ -39,7 +39,6 @@ router.post("/", async (req, res, next) => {
 			return res.status(400).send("no permissions to create rso");
 		}
 
-
 		let rso = new Rsos({
 			name,
 			admin,
@@ -49,16 +48,12 @@ router.post("/", async (req, res, next) => {
 
 		rso.save();
 
-		console.log(rso);
-
 		await Schools.findByIdAndUpdate(school, { $push: { rsos: rso._id } }, { useFindAndModify: false, new: true });
 		await Users.findByIdAndUpdate(decoded._id, { $push: { rsos: rso._id } }, { useFindAndModify: false, new: true });
 
-
 		return res.send(rso);
-
-
 	})
 })
+
 
 module.exports = router;

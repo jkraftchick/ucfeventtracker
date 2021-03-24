@@ -9,10 +9,8 @@ const SchoolSchema = new Schema({
 		unique: true
 	},
 	location: {
-		type: {
-			lat: Number,
-			lng: Number
-		}
+		lat: Number,
+		lng: Number
 	},
 	description: {
 		type: String
@@ -21,7 +19,7 @@ const SchoolSchema = new Schema({
 		type: String
 	},
 
-	students: [{ type: Schema.Types.ObjectId, ref: 'student' }],
+	students: [{ type: Schema.Types.ObjectId, ref: 'user' }],
 	rsos: [{ type: Schema.Types.ObjectId, ref: 'rso' }],
 	events: [{ type: Schema.Types.ObjectId, ref: 'event' }]
 });

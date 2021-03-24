@@ -14,19 +14,7 @@ var Schools = require('../models/school.model');
 const levels = ["public", "school", "rso"];
 const keys = ['title', 'subtitle', 'description', 'location', 'starts', 'ends', 'contact_name', 'contact_phone', 'contact_email', 'url']
 
-const ensureAuth = (req, res, next) => {
-	let auth = req.headers.authorization;
-	if (!auth) return res.status(400).send("missing auth token");
-
-	let token = auth.split(' ')[1];
-
-	jwt.verify(token, jwtconfig.secret, async (err, decoded) => {
-		if (err) return res.status(400).send(err);
-
-		req.headers.authorization = decoded;
-		next()
-	})
-}
+const ensureAuth = require('../auth');
 
 router.get("/", async (req, res, next) => {
 	let auth = req.headers.authorization;
@@ -34,36 +22,56 @@ router.get("/", async (req, res, next) => {
 
 	let token = auth.split(' ')[1];
 
-	let level = req.query.level || "public";
+	let level = req.query.level;
+
+	let id = req.query.id;
 
 	jwt.verify(token, jwtconfig.secret, async (err, decoded) => {
 		if (err) return res.status(400).send("invalid auth token");
 
-		let user = await Users.findById(decoded._id);
-		console.log(user);
+		// Only Level or Id, not both
+		if (level) {
+			let user = await Users.findById(decoded._id);
 
-		if (!levels.includes(level)) {
-			return res.status(400).send("Level must be public, school, or rso");
+			if (!levels.includes(level)) {
+				return res.status(400).send("Level must be public, school, or rso");
+			}
+
+			let search = { access_type: "public" }
+
+			if (level === "school") {
+				search = { $or: [{ access_type: "public" }, { access_type: "school", access: user.school }] }
+			}
+			else if (level === "rso") {
+				search = { $or: [{ access_type: "public" }, { access_type: "school", access: user.school }, { access_type: "rso", access: { $in: user.rsos } }] }
+			}
+
+			const events = await Events.find(search)//.populate('access') // TODO: re enable???
+
+			try {
+				return res.send(events);
+			}
+			catch (err) {
+				return res.status(500).send(err);
+			}
+		}
+		else if (id) {
+			const event = await Events.findById(id)//.populate('access') // TODO: re enable???
+
+			if (!event) return res.status(400).send("could not find event");
+
+			try {
+				return res.send(event);
+			}
+			catch (err) {
+				return res.status(500).send(err);
+			}
+		}
+		else {
+			return res.status(400).send("missing level or id parameter");
 		}
 
-		let search = { access_type: "public" }
 
-		if (level === "school") {
-			search = { $or: [{ access_type: "public" }, { access_type: "school", access: user.school }] }
-		}
-		else if (level === "rso") {
-			search = { $or: [{ access_type: "public" }, { access_type: "school", access: user.school }, { access_type: "rso", access: { $in: user.rsos } }] }
-		}
-
-
-		const events = await Events.find(search)//.populate('access') // TODO: re enable???
-
-		try {
-			return res.send(events);
-		}
-		catch (err) {
-			return res.status(500).send(err);
-		}
 	})
 })
 

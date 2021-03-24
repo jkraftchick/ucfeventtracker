@@ -6,13 +6,16 @@ import {
 	Link,
 	Redirect,
 	useHistory,
-	useLocation
+	useLocation,
+	useParams
 } from "react-router-dom";
 
 import axios from 'axios';
 
-import { Container, CssBaseline, Avatar, Typography, TextField, FormControlLabel, Checkbox, Button, makeStyles } from '@material-ui/core'
+import { Container, CssBaseline, Avatar, Typography, TextField, FormControlLabel, Checkbox, Button, makeStyles, ListItem, ListItemIcon, ListItemText, AppBar, Toolbar } from '@material-ui/core'
 import LockOutlinedIcon from '@material-ui/icons/LockOutlined';
+import DashboardIcon from '@material-ui/icons/Dashboard';
+import ExitToAppIcon from '@material-ui/icons/ExitToApp';
 
 // This example has 3 pages: a public page, a protected
 // page, and a login screen. In order to see the protected
@@ -29,31 +32,74 @@ import LockOutlinedIcon from '@material-ui/icons/LockOutlined';
 // and you'll see you go back to the page you visited
 // just *before* logging in, the public page.
 
+const useStyles = makeStyles((theme) => ({
+	paper: {
+		marginTop: theme.spacing(8),
+		display: 'flex',
+		flexDirection: 'column',
+		alignItems: 'center',
+	},
+	avatar: {
+		margin: theme.spacing(1),
+		backgroundColor: theme.palette.secondary.main,
+	},
+	form: {
+		width: '100%', // Fix IE 11 issue.
+		marginTop: theme.spacing(1),
+	},
+	submit: {
+		margin: theme.spacing(3, 0, 2),
+	},
+	menuButton: {
+		margin: theme.spacing(2),
+		display: 'flex',
+		position: 'absolute', right: 0
+	},
+	menuText: {
+		margin: theme.spacing(2),
+	},
+}));
+
+const Test = () => {
+	let { id } = useParams();
+
+	return (<p>{id}</p>)
+}
+
 export default function App() {
 	return (
 		<ProvideAuth>
 			<Router>
 				<div>
+					{/* DEBUG */}
 					<AuthButton />
-					<ul>
-						<li>
-							<Link to="/public">Public Page</Link>
-						</li>
-						<li>
-							<Link to="/protected">Protected Page</Link>
-						</li>
-					</ul>
 
 					<Switch>
-						<Route path="/public">
+						<Route exact path="/">
 							<PublicPage />
 						</Route>
-						<Route path="/login">
+						<Route exact path="/login">
 							<LoginPage />
 						</Route>
-						<PrivateRoute path="/protected">
+						<Route exact path="/signup">
+							<SignupPage />
+						</Route>
+						<PrivateRoute exact path="/dashboard">
+							<LeftNavLayout />
 							<ProtectedPage />
 						</PrivateRoute>
+						<PrivateRoute exact path="/event/:id">
+							<LeftNavLayout />
+							<Test />
+						</PrivateRoute>
+						<PrivateRoute exact path="/events">
+							<LeftNavLayout />
+							<p>test</p>
+						</PrivateRoute>
+
+						<Route>
+							<p>page not found</p>
+						</Route>
 					</Switch>
 				</div>
 			</Router>
@@ -61,17 +107,6 @@ export default function App() {
 	);
 }
 
-const fakeAuth = {
-	isAuthenticated: false,
-	signin(cb) {
-		fakeAuth.isAuthenticated = true;
-		setTimeout(cb, 100); // fake async
-	},
-	signout(cb) {
-		fakeAuth.isAuthenticated = false;
-		setTimeout(cb, 100);
-	}
-};
 
 /** For more details on
  * `authContext`, `ProvideAuth`, `useAuth` and `useProvideAuth`
@@ -93,23 +128,27 @@ function useAuth() {
 }
 
 function useProvideAuth() {
+	const [token, setToken] = useState(localStorage.getItem('token'));
 	const [user, setUser] = useState(null);
 
-	const signin = cb => {
-		return fakeAuth.signin(() => {
-			setUser("user");
-			cb();
-		});
+	const signin = (data, cb) => {
+		localStorage.setItem('token', data.token);
+		setToken(data.token);
+		setUser(data.user);
+
+		cb();
 	};
 
 	const signout = cb => {
-		return fakeAuth.signout(() => {
-			setUser(null);
-			cb();
-		});
+		localStorage.removeItem('token');
+		setToken(null);
+		setUser(null);
+
+		cb();
 	};
 
 	return {
+		token,
 		user,
 		signin,
 		signout
@@ -120,7 +159,7 @@ function AuthButton() {
 	let history = useHistory();
 	let auth = useAuth();
 
-	return auth.user ? (
+	return auth.token ? (
 		<p>
 			Welcome!{" "}
 			<button
@@ -144,7 +183,7 @@ function PrivateRoute({ children, ...rest }) {
 		<Route
 			{...rest}
 			render={({ location }) =>
-				auth.user ? (
+				auth.token ? (
 					children
 				) : (
 					<Redirect
@@ -159,53 +198,99 @@ function PrivateRoute({ children, ...rest }) {
 	);
 }
 
-function PublicPage() {
+const PublicPage = () => {
+	const auth = useAuth();
+	const history = useHistory();
 	const [data, setData] = useState("not loaded");
+	const classes = useStyles();
+
+
+	if (auth.token) history.push('/dashboard');
+
+	//const [button, setButton] = useState(false);
+
 	useEffect(() => {
 		axios.get('/api/testAPI')
 			.then(res => {
 				console.log(res.data);
 				setData(res.data);
 			})
-	}, [])
-	return <h3>{data}</h3>;
+	}, [])//}, [button])
+
+	return (
+		<>
+			<AppBar position="static">
+				<Toolbar>
+					<Typography className={classes.menuText}>ucfeventtracker</Typography>
+					<div className={classes.menuButton}>
+						<Button href="/signup">Sign Up</Button>
+						<Button href="/login">Login</Button>
+					</div>
+				</Toolbar>
+			</AppBar>
+			<h3>{data}</h3>
+		</>
+	);
+
+	// return (
+	// 	<>
+	// 		<h3>{false ? data : 'no'}</h3>
+	// 		<button onClick={() => {
+	// 			setButton(true);
+	// 			console.log('a')
+	// 			setTimeout(() => {
+	// 				setButton(false);
+	// 				console.log('b');
+	// 			}, 2000);
+	// 		}} >button</button>
+	// 	</>
+	// );
 }
 
 function ProtectedPage() {
 	return <h3>protec</h3>;
 }
 
-const useStyles = makeStyles((theme) => ({
-	paper: {
-		marginTop: theme.spacing(8),
-		display: 'flex',
-		flexDirection: 'column',
-		alignItems: 'center',
-	},
-	avatar: {
-		margin: theme.spacing(1),
-		backgroundColor: theme.palette.secondary.main,
-	},
-	form: {
-		width: '100%', // Fix IE 11 issue.
-		marginTop: theme.spacing(1),
-	},
-	submit: {
-		margin: theme.spacing(3, 0, 2),
-	},
-}));
 
-function LoginPage() {
+
+const LeftNavLayout = () => {
+	let history = useHistory();
+	let auth = useAuth();
+
+	return (
+		<div>
+			<ListItem button onClick={() => {
+				auth.signout(() => {
+					history.push('/')
+				})
+			}}>
+				<ListItemIcon>
+					<ExitToAppIcon />
+				</ListItemIcon>
+				<ListItemText primary="Sign Out" />
+			</ListItem>
+			<ListItem button onClick={() => history.push('/')}>
+				<ListItemIcon>
+					<DashboardIcon />
+				</ListItemIcon>
+				<ListItemText primary="Dashboard" />
+			</ListItem>
+		</div>
+	)
+}
+
+const LoginPage = () => {
 	let history = useHistory();
 	let location = useLocation();
 	let auth = useAuth();
 
 	const classes = useStyles();
 
-	let { from } = location.state || { from: { pathname: "/" } };
+	let { from } = location.state || { from: { pathname: "/dashboard" } };
 
 	const [username, setUsername] = useState("");
 	const [password, setPassword] = useState("");
+	const [error, setError] = useState(false);
 
 	let login = () => {
 
@@ -213,22 +298,24 @@ function LoginPage() {
 
 		axios.post("/api/users/login", { username: username, password: password })
 			.then(res => {
-				alert(JSON.stringify(res.data))
-				console.log(res);
-			});
+				//alert(JSON.stringify(res.data))
+				// console.log(res);
 
-		auth.signin(() => {
-			history.replace(from);
-		});
+				auth.signin(res.data, () => {
+					history.replace(from);
+				});
+			})
+			.catch(err => {
+				setError(err);
+			})
+
+
 	};
 
 	return (
 		<Container component="main" maxWidth="sm">
 			<CssBaseline />
 			<div className={classes.paper}>
-				<Typography component="h1" variant="h5">
-					You must log in to view the page at {from.pathname}
-				</Typography>
 				<Avatar className={classes.avatar}>
 					<LockOutlinedIcon />
 				</Avatar>
@@ -243,7 +330,6 @@ function LoginPage() {
 					id="username"
 					label="Username"
 					name="username"
-					autoComplete="username"
 					autoFocus
 					value={username}
 					onChange={e => setUsername(e.target.value)}
@@ -257,10 +343,12 @@ function LoginPage() {
 					label="Password"
 					type="password"
 					id="password"
-					autoComplete="current-password"
 					value={password}
 					onChange={e => setPassword(e.target.value)}
 				/>
+				{error &&
+					<Typography>Error! invalid username or password</Typography>
+				}
 				<Button
 					type="submit"
 					fullWidth
@@ -268,6 +356,7 @@ function LoginPage() {
 					color="primary"
 					className={classes.submit}
 					onClick={() => login()}
+
 				>
 					Sign In
 				</Button>
@@ -275,4 +364,139 @@ function LoginPage() {
 		</Container>
 
 	);
+
+
+}
+
+const SignupPage = () => {
+	let history = useHistory();
+	let location = useLocation();
+	let auth = useAuth();
+
+	const classes = useStyles();
+
+	let { from } = location.state || { from: { pathname: "/dashboard" } };
+
+	const [username, setUsername] = useState("");
+	const [confirmpassword, setConfirmpassword] = useState("");
+	const [password, setPassword] = useState("");
+	const [firstname, setFirstname] = useState("");
+	const [lastname, setLastname] = useState("");
+	const [error, setError] = useState()
+
+	let signup = () => {
+
+		//alert(username + ' ' + password)
+
+		axios.post("/api/users/signup", { username: username, password: password, firstname: firstname, lastname: lastname })
+			.then(res => {
+				//alert(JSON.stringify(res.data))
+				// console.log(res);
+
+				auth.signin(res.data, () => {
+					history.replace(from);
+				});
+			})
+			.catch(err => {
+				setError("failed to make account");
+			})
+	};
+
+	useEffect(() => {
+
+		if (firstname === "") setError("Missing first name")
+		else if (lastname === "") setError("Missing last name")
+		else if (username === "") setError("Missing username")
+
+		else if (password === "") setError("No Password");
+		else if (password !== confirmpassword) setError("Passwords do not match!");
+		else setError();
+
+	}, [password, confirmpassword, firstname, username, lastname])
+
+	return (
+		<Container component="main" maxWidth="sm">
+			<CssBaseline />
+			<div className={classes.paper}>
+				<Avatar className={classes.avatar}>
+					<LockOutlinedIcon />
+				</Avatar>
+				<Typography component="h1" variant="h5">
+					Sign up
+					</Typography>
+				<TextField
+					variant="outlined"
+					margin="normal"
+					required
+					fullWidth
+					name="firstname"
+					label="First Name"
+					value={firstname}
+					onChange={e => setFirstname(e.target.value)}
+				/>
+				<TextField
+					variant="outlined"
+					margin="normal"
+					required
+					fullWidth
+					name="lastname"
+					label="Last Name"
+					value={lastname}
+					onChange={e => setLastname(e.target.value)}
+				/>
+				<br />
+				<TextField
+					variant="outlined"
+					margin="normal"
+					required
+					fullWidth
+					id="username"
+					label="Username"
+					name="username"
+					autoFocus
+					value={username}
+					onChange={e => setUsername(e.target.value)}
+				/>
+				<TextField
+					variant="outlined"
+					margin="normal"
+					required
+					fullWidth
+					name="password"
+					label="Password"
+					type="password"
+					id="password"
+					value={password}
+					onChange={e => setPassword(e.target.value)}
+				/>
+				<TextField
+					variant="outlined"
+					margin="normal"
+					required
+					fullWidth
+					name="confirmpassword"
+					label="Confirm Password"
+					type="password"
+					id="confirmpassword"
+					value={confirmpassword}
+					onChange={e => setConfirmpassword(e.target.value)}
+				/>
+				<br />
+				{error &&
+					<Typography>{error}</Typography>
+				}
+				<Button
+					type="submit"
+					fullWidth
+					variant="contained"
+					color="primary"
+					className={classes.submit}
+					onClick={() => signup()}
+					disabled={Boolean(error)}
+				>
+					Sign In
+				</Button>
+			</div>
+		</Container >
+	)
 }
