@@ -16,7 +16,9 @@ import { CardHeader, Paper, Card, MenuItem, Container, CssBaseline, Avatar, Typo
 import LockOutlinedIcon from '@material-ui/icons/LockOutlined';
 import DashboardIcon from '@material-ui/icons/Dashboard';
 import ExitToAppIcon from '@material-ui/icons/ExitToApp';
-import Select from '@material-ui/core/Select';
+
+import { Dashboard } from './components/Dashboard';
+import { useAuth, useProvideAuth, authContext } from './components/Auth';
 
 // This example has 3 pages: a public page, a protected
 // page, and a login screen. In order to see the protected
@@ -71,38 +73,33 @@ export default function App() {
 	return (
 		<ProvideAuth>
 			<Router>
-				<div>
-					{/* DEBUG */}
-					<AuthButton />
+				<Switch>
+					<Route exact path="/">
+						<FrontPage />
+					</Route>
+					<Route exact path="/login">
+						<LoginPage />
+					</Route>
+					<Route exact path="/signup">
+						<SignupPage />
+					</Route>
+					<PrivateRoute exact path="/dashboard">
+						<LeftNavLayout />
+						<Dashboard />
+					</PrivateRoute>
+					<PrivateRoute exact path="/event/:id">
+						<LeftNavLayout />
+						<Test />
+					</PrivateRoute>
+					<PrivateRoute exact path="/events">
+						<LeftNavLayout />
+						<p>test</p>
+					</PrivateRoute>
 
-					<Switch>
-						<Route exact path="/">
-							<PublicPage />
-						</Route>
-						<Route exact path="/login">
-							<LoginPage />
-						</Route>
-						<Route exact path="/signup">
-							<SignupPage />
-						</Route>
-						<PrivateRoute exact path="/dashboard">
-							<LeftNavLayout />
-							<Dashboard />
-						</PrivateRoute>
-						<PrivateRoute exact path="/event/:id">
-							<LeftNavLayout />
-							<Test />
-						</PrivateRoute>
-						<PrivateRoute exact path="/events">
-							<LeftNavLayout />
-							<p>test</p>
-						</PrivateRoute>
-
-						<Route>
-							<p>page not found</p>
-						</Route>
-					</Switch>
-				</div>
+					<Route>
+						<p>page not found</p>
+					</Route>
+				</Switch>
 			</Router>
 		</ProvideAuth>
 	);
@@ -113,7 +110,6 @@ export default function App() {
  * `authContext`, `ProvideAuth`, `useAuth` and `useProvideAuth`
  * refer to: https://usehooks.com/useAuth/
  */
-const authContext = createContext();
 
 function ProvideAuth({ children }) {
 	const auth = useProvideAuth();
@@ -121,58 +117,6 @@ function ProvideAuth({ children }) {
 		<authContext.Provider value={auth}>
 			{children}
 		</authContext.Provider>
-	);
-}
-
-function useAuth() {
-	return useContext(authContext);
-}
-
-function useProvideAuth() {
-	const [token, setToken] = useState(localStorage.getItem('token'));
-	const [user, setUser] = useState(null);
-
-	const signin = (data, cb) => {
-		localStorage.setItem('token', data.token);
-		setToken(data.token);
-		setUser(data.user);
-
-		cb();
-	};
-
-	const signout = cb => {
-		localStorage.removeItem('token');
-		setToken(null);
-		setUser(null);
-
-		cb();
-	};
-
-	return {
-		token,
-		user,
-		signin,
-		signout
-	};
-}
-
-function AuthButton() {
-	let history = useHistory();
-	let auth = useAuth();
-
-	return auth.token ? (
-		<p>
-			Welcome!{" "}
-			<button
-				onClick={() => {
-					auth.signout(() => history.push("/"));
-				}}
-			>
-				Sign out
-      </button>
-		</p>
-	) : (
-		<p>You are not logged in.</p>
 	);
 }
 
@@ -199,7 +143,8 @@ function PrivateRoute({ children, ...rest }) {
 	);
 }
 
-const PublicPage = () => {
+
+const FrontPage = (props) => {
 	const auth = useAuth();
 	const history = useHistory();
 	const [data, setData] = useState("not loaded");
@@ -208,17 +153,13 @@ const PublicPage = () => {
 
 	if (auth.token) history.push('/dashboard');
 
-	//const [button, setButton] = useState(false);
-
-	const defaultPosition = [48.864716, 2.349]; // Paris position
-
 	useEffect(() => {
 		axios.get('/api/testAPI')
 			.then(res => {
 				console.log(res.data);
 				setData(res.data);
 			})
-	}, [])//}, [button])
+	}, [])
 
 	return (
 		<>
@@ -234,88 +175,7 @@ const PublicPage = () => {
 			<h3>{data}</h3>
 		</>
 	);
-
-	// return (
-	// 	<>
-	// 		<h3>{false ? data : 'no'}</h3>
-	// 		<button onClick={() => {
-	// 			setButton(true);
-	// 			console.log('a')
-	// 			setTimeout(() => {
-	// 				setButton(false);
-	// 				console.log('b');
-	// 			}, 2000);
-	// 		}} >button</button>
-	// 	</>
-	// );
 }
-
-const Dashboard = () => {
-	let history = useHistory();
-	const auth = useProvideAuth();
-	const [events, setEvents] = useState([])
-	const [level, setLevel] = useState('rso')
-
-	useEffect(() => {
-		axios.get(`/api/event?level=${level}`, {
-			headers: {
-				'Authorization': `Token ${auth.token}`
-			}
-		})
-			.then(data => {
-				setEvents(data.data);
-			})
-			.catch(err => {
-				throw err;
-			})
-	}, [level])
-
-	return (
-		<>
-			<Select
-				value={level}
-				onChange={(e) => setLevel(e.target.value)}
-			>
-				<MenuItem value={'public'}>Public</MenuItem>
-				<MenuItem value={'school'}>School</MenuItem>
-				<MenuItem value={'rso'}>RSO</MenuItem>
-			</Select>
-			<Paper style={{ height: '75vh', overflow: 'auto' }} elevation={0}>
-				{events.map(event => (
-					<>
-						<Card key={event._id} style={{ margin: 10, padding: 10 }}>
-							<CardHeader
-								title={event.title}
-								subheader={`${event.subtitle} : ${event.access_type}`}
-							/>
-							{new Date(event.starts).toLocaleString()} - {new Date(event.ends).toLocaleString()}
-							<br />
-							 
-							<br />
-							{event.subtitle}
-							<Paper style={{ maxHeight: 200, overflow: 'auto', margin: 2 }} elevation={0}>
-								{event.description}
-							</Paper>
-							{event.contact_name}
-							<br />
-							{event.contact_email}, {event.contact_phone}
-							<br />
-
-							<Button variant="contained" color="primary"
-								onClick={() => history.push(`/event/${event._id}`)}
-
-							>
-								Bruh
-							</Button>
-						</Card>
-					</>
-				))}
-			</Paper>
-		</>
-	)
-}
-
-
 
 const LeftNavLayout = () => {
 	let history = useHistory();
@@ -377,56 +237,62 @@ const LoginPage = () => {
 	};
 
 	return (
-		<Container component="main" maxWidth="sm">
-			<CssBaseline />
-			<div className={classes.paper}>
-				<Avatar className={classes.avatar}>
-					<LockOutlinedIcon />
-				</Avatar>
-				<Typography component="h1" variant="h5">
-					Sign in
+		<>
+			<AppBar position="static">
+				<Toolbar>
+					<Button component={Link} className={classes.menuText} to='/' variant='text'>ucfeventtracker</Button>
+				</Toolbar>
+			</AppBar>
+			<Container component="main" maxWidth="sm">
+				<CssBaseline />
+				<div className={classes.paper}>
+					<Avatar className={classes.avatar}>
+						<LockOutlinedIcon />
+					</Avatar>
+					<Typography component="h1" variant="h5">
+						Sign in
         			</Typography>
-				<TextField
-					variant="outlined"
-					margin="normal"
-					required
-					fullWidth
-					id="username"
-					label="Username"
-					name="username"
-					autoFocus
-					value={username}
-					onChange={e => setUsername(e.target.value)}
-				/>
-				<TextField
-					variant="outlined"
-					margin="normal"
-					required
-					fullWidth
-					name="password"
-					label="Password"
-					type="password"
-					id="password"
-					value={password}
-					onChange={e => setPassword(e.target.value)}
-				/>
-				{error &&
-					<Typography>Error! invalid username or password</Typography>
-				}
-				<Button
-					type="submit"
-					fullWidth
-					variant="contained"
-					color="primary"
-					className={classes.submit}
-					onClick={() => login()}
+					<TextField
+						variant="outlined"
+						margin="normal"
+						required
+						fullWidth
+						id="username"
+						label="Username"
+						name="username"
+						autoFocus
+						value={username}
+						onChange={e => setUsername(e.target.value)}
+					/>
+					<TextField
+						variant="outlined"
+						margin="normal"
+						required
+						fullWidth
+						name="password"
+						label="Password"
+						type="password"
+						id="password"
+						value={password}
+						onChange={e => setPassword(e.target.value)}
+					/>
+					{error &&
+						<Typography>Error! invalid username or password</Typography>
+					}
+					<Button
+						type="submit"
+						fullWidth
+						variant="contained"
+						color="primary"
+						className={classes.submit}
+						onClick={() => login()}
 
-				>
-					Sign In
+					>
+						Sign In
 				</Button>
-			</div>
-		</Container>
-
+				</div>
+			</Container>
+		</>
 	);
 
 
