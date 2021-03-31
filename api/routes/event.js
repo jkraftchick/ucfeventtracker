@@ -12,7 +12,7 @@ var Rsos = require('../models/rso.model');
 var Schools = require('../models/school.model');
 
 const levels = ["public", "school", "rso"];
-const keys = ['title', 'subtitle', 'description', 'location', 'starts', 'ends', 'contact_name', 'contact_phone', 'contact_email', 'url']
+const keys = ['title', 'subtitle', 'description', 'location', 'location.lat', 'location.lng', 'starts', 'ends', 'contact_name', 'contact_phone', 'contact_email', 'url']
 
 const ensureAuth = require('../auth');
 

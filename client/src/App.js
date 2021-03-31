@@ -12,10 +12,11 @@ import {
 
 import axios from 'axios';
 
-import { Container, CssBaseline, Avatar, Typography, TextField, FormControlLabel, Checkbox, Button, makeStyles, ListItem, ListItemIcon, ListItemText, AppBar, Toolbar } from '@material-ui/core'
+import { CardHeader, Paper, Card, MenuItem, Container, CssBaseline, Avatar, Typography, TextField, FormControlLabel, Checkbox, Button, makeStyles, ListItem, ListItemIcon, ListItemText, AppBar, Toolbar, Menu } from '@material-ui/core'
 import LockOutlinedIcon from '@material-ui/icons/LockOutlined';
 import DashboardIcon from '@material-ui/icons/Dashboard';
 import ExitToAppIcon from '@material-ui/icons/ExitToApp';
+import Select from '@material-ui/core/Select';
 
 // This example has 3 pages: a public page, a protected
 // page, and a login screen. In order to see the protected
@@ -86,7 +87,7 @@ export default function App() {
 						</Route>
 						<PrivateRoute exact path="/dashboard">
 							<LeftNavLayout />
-							<ProtectedPage />
+							<Dashboard />
 						</PrivateRoute>
 						<PrivateRoute exact path="/event/:id">
 							<LeftNavLayout />
@@ -209,6 +210,8 @@ const PublicPage = () => {
 
 	//const [button, setButton] = useState(false);
 
+	const defaultPosition = [48.864716, 2.349]; // Paris position
+
 	useEffect(() => {
 		axios.get('/api/testAPI')
 			.then(res => {
@@ -247,8 +250,69 @@ const PublicPage = () => {
 	// );
 }
 
-function ProtectedPage() {
-	return <h3>protec</h3>;
+const Dashboard = () => {
+	let history = useHistory();
+	const auth = useProvideAuth();
+	const [events, setEvents] = useState([])
+	const [level, setLevel] = useState('rso')
+
+	useEffect(() => {
+		axios.get(`/api/event?level=${level}`, {
+			headers: {
+				'Authorization': `Token ${auth.token}`
+			}
+		})
+			.then(data => {
+				setEvents(data.data);
+			})
+			.catch(err => {
+				throw err;
+			})
+	}, [level])
+
+	return (
+		<>
+			<Select
+				value={level}
+				onChange={(e) => setLevel(e.target.value)}
+			>
+				<MenuItem value={'public'}>Public</MenuItem>
+				<MenuItem value={'school'}>School</MenuItem>
+				<MenuItem value={'rso'}>RSO</MenuItem>
+			</Select>
+			<Paper style={{ height: '75vh', overflow: 'auto' }} elevation={0}>
+				{events.map(event => (
+					<>
+						<Card key={event._id} style={{ margin: 10, padding: 10 }}>
+							<CardHeader
+								title={event.title}
+								subheader={`${event.subtitle} : ${event.access_type}`}
+							/>
+							{new Date(event.starts).toLocaleString()} - {new Date(event.ends).toLocaleString()}
+							<br />
+							 
+							<br />
+							{event.subtitle}
+							<Paper style={{ maxHeight: 200, overflow: 'auto', margin: 2 }} elevation={0}>
+								{event.description}
+							</Paper>
+							{event.contact_name}
+							<br />
+							{event.contact_email}, {event.contact_phone}
+							<br />
+
+							<Button variant="contained" color="primary"
+								onClick={() => history.push(`/event/${event._id}`)}
+
+							>
+								Bruh
+							</Button>
+						</Card>
+					</>
+				))}
+			</Paper>
+		</>
+	)
 }
 
 
