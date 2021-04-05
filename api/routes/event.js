@@ -227,6 +227,22 @@ router.delete("/:id", ensureAuth, async (req, res, next) => {
 	}
 })
 
+router.patch("/join/:id", ensureAuth, async (req, res, next) => {
+	if (!req.params.id) return res.status(400).send("missing id");
 
+	Events.findByIdAndUpdate(req.params.id, { $push: { users: req.body.user } }, { useFindAndModify: false, new: true }, (dberr, dbres) => {
+		if (dberr) return res.status(400).send(dberr);
+		res.send(dbres);
+	})
+})
+
+router.patch("/leave/:id", ensureAuth, async (req, res, next) => {
+	if (!req.params.id) return res.status(400).send("missing id");
+
+	Events.findByIdAndUpdate(req.params.id, { $pull: { users: req.body.user } }, { useFindAndModify: false, new: true }, (dberr, dbres) => {
+		if (dberr) return res.status(400).send(dberr);
+		res.send(dbres);
+	})
+})
 
 module.exports = router;

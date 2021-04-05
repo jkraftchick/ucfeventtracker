@@ -44,7 +44,8 @@ router.post('/login', async (req, res) => {
 					user: {
 						username: user.username,
 						firstName: user.firstName,
-						lastName: user.lastName
+						lastName: user.lastName,
+						_id: user._id
 					}
 				});
 			});
@@ -96,6 +97,7 @@ router.post('/signup', async (req, res) => {
 								username: savedUser.username,
 								firstName: savedUser.firstName,
 								lastName: savedUser.lastName,
+								_id: user._id
 							}
 						});
 					});
@@ -128,5 +130,17 @@ router.post('/upgrade', (req, res) => {
 
 });
 
+// we're crashing at a nonexstant id here lol
+router.get("/:id", async (req, res, next) => {
+	if (!req.params.id) return res.status(400).send("missing id");
+
+	User.findById(req.params.id, (dberr, dbres) => {
+		if (dberr) return res.status(400).send(dberr);
+		res.send({
+			firstName: dbres.firstName,
+			lastName: dbres.lastName
+		});
+	})
+})
 
 module.exports = router;
