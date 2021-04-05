@@ -19,6 +19,7 @@ import ExitToAppIcon from '@material-ui/icons/ExitToApp';
 
 import { Dashboard } from './components/Dashboard';
 import { useAuth, useProvideAuth, authContext } from './components/Auth';
+import { Event } from './components/Event';
 
 // This example has 3 pages: a public page, a protected
 // page, and a login screen. In order to see the protected
@@ -63,12 +64,6 @@ const useStyles = makeStyles((theme) => ({
 	},
 }));
 
-const Test = () => {
-	let { id } = useParams();
-
-	return (<p>{id}</p>)
-}
-
 export default function App() {
 	return (
 		<ProvideAuth>
@@ -89,7 +84,7 @@ export default function App() {
 					</PrivateRoute>
 					<PrivateRoute exact path="/event/:id">
 						<LeftNavLayout />
-						<Test />
+						<Event />
 					</PrivateRoute>
 					<PrivateRoute exact path="/events">
 						<LeftNavLayout />
@@ -104,12 +99,6 @@ export default function App() {
 		</ProvideAuth>
 	);
 }
-
-
-/** For more details on
- * `authContext`, `ProvideAuth`, `useAuth` and `useProvideAuth`
- * refer to: https://usehooks.com/useAuth/
- */
 
 function ProvideAuth({ children }) {
 	const auth = useProvideAuth();
@@ -179,27 +168,20 @@ const FrontPage = (props) => {
 
 const LeftNavLayout = () => {
 	let history = useHistory();
+	let location = useLocation();
 	let auth = useAuth();
+	const classes = useStyles();
 
 	return (
-		<div>
-			<ListItem button onClick={() => {
-				auth.signout(() => {
-					history.push('/')
-				})
-			}}>
-				<ListItemIcon>
-					<ExitToAppIcon />
-				</ListItemIcon>
-				<ListItemText primary="Sign Out" />
-			</ListItem>
-			<ListItem button onClick={() => history.push('/')}>
-				<ListItemIcon>
-					<DashboardIcon />
-				</ListItemIcon>
-				<ListItemText primary="Dashboard" />
-			</ListItem>
-		</div>
+		<AppBar position="static">
+			<Toolbar>
+				<Typography className={classes.menuText}>ucfeventtracker</Typography>
+				<div className={classes.menuButton}>
+					{location.pathname !== '/dashboard' && <Button href="/dashboard"> Dashboard </Button>}
+					<Button href="/" onClick={() => { auth.signout() }}>Sign Out</Button>
+				</div>
+			</Toolbar>
+		</AppBar>
 	)
 }
 
@@ -216,6 +198,8 @@ const LoginPage = () => {
 	const [password, setPassword] = useState("");
 	const [error, setError] = useState(false);
 
+	if (auth.token) history.push('/dashboard');
+
 	let login = () => {
 
 		//alert(username + ' ' + password)
@@ -223,7 +207,7 @@ const LoginPage = () => {
 		axios.post("/api/users/login", { username: username, password: password })
 			.then(res => {
 				//alert(JSON.stringify(res.data))
-				// console.log(res);
+				console.log('login', res);
 
 				auth.signin(res.data, () => {
 					history.replace(from);

@@ -8,10 +8,11 @@ export function useAuth() {
 
 export function useProvideAuth() {
 	const [token, setToken] = useState(localStorage.getItem('token'));
-	const [user, setUser] = useState(null);
+	const [user, setUser] = useState(JSON.parse(localStorage.getItem('user')));
 
 	const signin = (data, cb) => {
 		localStorage.setItem('token', data.token);
+		localStorage.setItem('user', JSON.stringify(data.user));
 		setToken(data.token);
 		setUser(data.user);
 
@@ -20,6 +21,7 @@ export function useProvideAuth() {
 
 	const signout = cb => {
 		localStorage.removeItem('token');
+		localStorage.removeItem('user');
 		setToken(null);
 		setUser(null);
 
