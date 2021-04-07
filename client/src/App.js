@@ -20,6 +20,10 @@ import ExitToAppIcon from '@material-ui/icons/ExitToApp';
 import { Dashboard } from './components/Dashboard';
 import { useAuth, useProvideAuth, authContext } from './components/Auth';
 import { Event } from './components/Event';
+import { NewEvent } from './components/newEvent';
+// import 'leaflet/dist/leaflet.css';
+import { MapContainer, TileLayer, Marker, Popup } from 'react-leaflet'
+
 
 // This example has 3 pages: a public page, a protected
 // page, and a login screen. In order to see the protected
@@ -86,11 +90,18 @@ export default function App() {
 						<LeftNavLayout />
 						<Event />
 					</PrivateRoute>
-					<PrivateRoute exact path="/events">
+					<PrivateRoute exact path="/newevent" role={["admin", "superadmin"]}>
 						<LeftNavLayout />
-						<p>test</p>
+						{/* <p>test </p> */}
+						<NewEvent />
 					</PrivateRoute>
 
+
+					<Route path="/no-perm">
+						<LeftNavLayout />
+						<p>test </p>
+						{/* <NewEvent /> */}
+					</Route>
 					<Route>
 						<p>page not found</p>
 					</Route>
@@ -111,14 +122,32 @@ function ProvideAuth({ children }) {
 
 // A wrapper for <Route> that redirects to the login
 // screen if you're not yet authenticated.
-function PrivateRoute({ children, ...rest }) {
+function PrivateRoute({ children, role, ...rest }) {
 	let auth = useAuth();
+
+	if (role) {
+		console.log('has role option')
+	}
+
 	return (
 		<Route
 			{...rest}
 			render={({ location }) =>
 				auth.token ? (
-					children
+
+					!role ?
+						children
+						:
+						(role.includes(auth.user.role) ?
+							children
+							:
+							<Redirect
+								to={{
+									pathname: "/no-perm",
+									state: { from: location }
+								}}
+							/>
+						)
 				) : (
 					<Redirect
 						to={{
@@ -162,6 +191,18 @@ const FrontPage = (props) => {
 				</Toolbar>
 			</AppBar>
 			<h3>{data}</h3>
+
+			<MapContainer center={[51.505, -0.09]} zoom={13} style={{ width: 300, height: 300 }}>
+				<TileLayer
+					attribution='&copy; <a href="http://osm.org/copyright">OpenStreetMap</a> contributors'
+					url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+				/>
+				<Marker position={[51.505, -0.09]}>
+					<Popup>
+						A pretty CSS3 popup. <br /> Easily customizable.
+    				</Popup>
+				</Marker>
+			</MapContainer>
 		</>
 	);
 }
@@ -171,17 +212,19 @@ const LeftNavLayout = () => {
 	let location = useLocation();
 	let auth = useAuth();
 	const classes = useStyles();
-
+	console.log(auth);
 	return (
 		<AppBar position="static">
 			<Toolbar>
 				<Typography className={classes.menuText}>ucfeventtracker</Typography>
 				<div className={classes.menuButton}>
+					{location.pathname == '/dashboard' && (auth.user?.role === 'superadmin' || auth.user?.role === 'admin') &&
+						<Button href="/newevent"> New Event </Button>}
 					{location.pathname !== '/dashboard' && <Button href="/dashboard"> Dashboard </Button>}
 					<Button href="/" onClick={() => { auth.signout() }}>Sign Out</Button>
 				</div>
 			</Toolbar>
-		</AppBar>
+		</AppBar >
 	)
 }
 

@@ -39,6 +39,8 @@ router.get("/", async (req, res, next) => {
 
 			let search = { access_type: "public" }
 
+			console.log(user);
+
 			if (level === "school") {
 				search = { $or: [{ access_type: "public" }, { access_type: "school", access: user.school }] }
 			}
@@ -46,26 +48,20 @@ router.get("/", async (req, res, next) => {
 				search = { $or: [{ access_type: "public" }, { access_type: "school", access: user.school }, { access_type: "rso", access: { $in: user.rsos } }] }
 			}
 
-			const events = await Events.find(search)//.populate('access') // TODO: re enable???
+			Events.find(search).populate('users', 'firstName lastName _id').exec((err, events) => {
+				if (err) return res.status(500).send(err);
 
-			try {
 				return res.send(events);
-			}
-			catch (err) {
-				return res.status(500).send(err);
-			}
+			})
 		}
 		else if (id) {
-			const event = await Events.findById(id)//.populate('access') // TODO: re enable???
+			//const event = await Events.findById(id).populate('users').execPopulate()//.populate('access') // TODO: re enable???
 
-			if (!event) return res.status(400).send("could not find event");
+			Events.findById(id).populate('users', 'firstName lastName _id').exec((err, events) => {
+				if (err) return res.status(500).send(err);
 
-			try {
-				return res.send(event);
-			}
-			catch (err) {
-				return res.status(500).send(err);
-			}
+				return res.send(events);
+			})
 		}
 		else {
 			return res.status(400).send("missing level or id parameter");
@@ -78,16 +74,19 @@ router.get("/", async (req, res, next) => {
 router.post("/", async (req, res, next) => {
 	const { access_type, access, title, subtitle, description, location, starts, ends, contact_name, contact_phone, contact_email, url } = req.body;
 
+	console.log(req.body);
+
 	let auth = req.headers.authorization;
 	if (!auth) return res.status(400).send("missing auth token");
 
 	let token = auth.split(' ')[1];
 
+	console.log('here pre jwt');
+
 	jwt.verify(token, jwtconfig.secret, async (err, decoded) => {
 		if (err) return res.status(400).send("invalid auth token");
 
 		let user = await Users.findById(decoded._id);
-		console.log(user);
 
 		if (user.role !== 'admin' && user.role !== 'superadmin') {
 			return res.status(400).send("no permissions to create events");
@@ -131,7 +130,7 @@ router.post("/", async (req, res, next) => {
 				return res.status(400).send("you must be a super admin to create school events");
 			}
 
-			let school = await Schools.findById(access);
+			//let school = await Schools.findById(access);
 
 			let event = new Events({
 				title,
@@ -145,7 +144,7 @@ router.post("/", async (req, res, next) => {
 				contact_email,
 				url,
 				access_type: 'school',
-				access: school._id
+				access: user.school
 			})
 
 			event.save();
@@ -155,9 +154,12 @@ router.post("/", async (req, res, next) => {
 			return res.send(event);
 		}
 		else if (access_type === 'public') {
+			console.log('here');
 			if (user.role !== "superadmin") {
 				return res.status(400).send("you must be a super admin to create public events");
 			}
+
+			console.log('event');
 
 			let event = new Events({
 				title,
@@ -230,7 +232,7 @@ router.delete("/:id", ensureAuth, async (req, res, next) => {
 router.patch("/join/:id", ensureAuth, async (req, res, next) => {
 	if (!req.params.id) return res.status(400).send("missing id");
 
-	Events.findByIdAndUpdate(req.params.id, { $push: { users: req.body.user } }, { useFindAndModify: false, new: true }, (dberr, dbres) => {
+	Events.findByIdAndUpdate(req.params.id, { $push: { users: req.body.user } }, { useFindAndModify: false, new: true, populate: {path:'users', select: 'firstName lastName _id'} }, (dberr, dbres) => {
 		if (dberr) return res.status(400).send(dberr);
 		res.send(dbres);
 	})
@@ -239,7 +241,7 @@ router.patch("/join/:id", ensureAuth, async (req, res, next) => {
 router.patch("/leave/:id", ensureAuth, async (req, res, next) => {
 	if (!req.params.id) return res.status(400).send("missing id");
 
-	Events.findByIdAndUpdate(req.params.id, { $pull: { users: req.body.user } }, { useFindAndModify: false, new: true }, (dberr, dbres) => {
+	Events.findByIdAndUpdate(req.params.id, { $pull: { users: req.body.user } }, { useFindAndModify: false, new: true, populate: {path:'users', select: 'firstName lastName _id'} }, (dberr, dbres) => {
 		if (dberr) return res.status(400).send(dberr);
 		res.send(dbres);
 	})

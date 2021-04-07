@@ -14,6 +14,10 @@ import axios from 'axios';
 
 import { List, Select, CardHeader, Paper, Card, MenuItem, Container, CssBaseline, Avatar, Typography, TextField, FormControlLabel, Checkbox, Button, makeStyles, ListItem, ListItemIcon, ListItemText, AppBar, Toolbar, Menu, ListSubheader } from '@material-ui/core'
 
+// import 'leaflet/dist/leaflet.css';
+import { MapContainer, TileLayer, Marker, Popup } from 'react-leaflet'
+
+
 import { useAuth, useProvideAuth, authContext } from './Auth';
 
 
@@ -23,7 +27,6 @@ export const Event = () => {
 	let { id } = useParams();
 
 	const [event, setEvent] = useState();
-	// const [users, setUsers] = useState();
 
 	useEffect(() => {
 		axios.get(`/api/event?id=${id}`, {
@@ -38,15 +41,6 @@ export const Event = () => {
 				throw err;
 			})
 	}, [])
-
-	// useEffect(() => {
-	// 	event.users.map(user => (
-	// 		user
-	// 		// axios.get(`/api/users/${user}`).then(data => {
-	// 		// 	console.log(data)
-	// 		// })
-	// 	))
-	// }, [event])
 
 	return (
 		<>
@@ -69,7 +63,8 @@ export const Event = () => {
 					{event.contact_email}, {event.contact_phone}
 					<br />
 
-					{event.users.includes(auth.user?._id) ?
+					{event.users.some(user => user._id === auth.user?._id) ?
+						// {event.users.includes(auth.user?._id) ?
 						<Button onClick={() => {
 							axios.patch(`/api/event/leave/${event._id}`, {
 								'user': auth.user._id
@@ -103,18 +98,29 @@ export const Event = () => {
 						}}>
 							Join Event</Button>
 					}
-				</Card>
-				<List>
-					<Typography>
-						Current Attendees
+					<List>
+						<Typography>
+							Current Attendees
 					</Typography>
-					{event.users.map(user => (
-						// idk how to have it show actual data
-						<ListItemText>
-							{user}
-						</ListItemText>
-					))}
-				</List>
+						{event.users.map(user => (
+							// idk how to have it show actual data
+							<ListItemText>
+								{user.firstName} {user.lastName}
+							</ListItemText>
+						))}
+					</List>
+
+					<MapContainer
+						center={event.location}
+						zoom={13}
+						style={{ width: 300, height: 300 }}
+					>
+						<TileLayer
+							url="https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}"
+						/>
+						<Marker position={event.location} />
+					</MapContainer>
+				</Card>
 			</>
 				:
 				<Typography>Loading Event</Typography>

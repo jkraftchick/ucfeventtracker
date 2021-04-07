@@ -45,6 +45,7 @@ router.post('/login', async (req, res) => {
 						username: user.username,
 						firstName: user.firstName,
 						lastName: user.lastName,
+						role: user.role,
 						_id: user._id
 					}
 				});
@@ -97,6 +98,7 @@ router.post('/signup', async (req, res) => {
 								username: savedUser.username,
 								firstName: savedUser.firstName,
 								lastName: savedUser.lastName,
+								role: savedUser.role,
 								_id: user._id
 							}
 						});
