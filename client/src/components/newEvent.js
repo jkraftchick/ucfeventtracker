@@ -93,25 +93,12 @@ export const NewEvent = () => {
 			}
 		})
 			.then(data => {
-				console.log(data);
+				history.push(`/event/${data.data._id}`)
 			})
 			.catch(err => {
 				setError("failed to make account");
 			})
 	};
-
-	// const create = () => {
-	// 	title: title,
-	// 	subtitle: subtitle,
-	// 	description: description,
-	// 	location: location,
-	// 	starts: starts,
-	// 	ends: ends,
-	// 	contact_name: contact_name,
-	// 	contact_phone: contact_phone,
-	// 	contact_email: contact_email,
-	// 	level: level,
-	// }
 
 	useEffect(() => {
 		if (title === "") setError("Missing title");
@@ -284,7 +271,9 @@ export const NewEvent = () => {
 					variant="contained"
 					color="primary"
 					className={classes.submit}
-					onClick={() => create()}
+					onClick={() => {
+						create()
+					}} 
 					disabled={Boolean(error)}
 				>
 					Create Event

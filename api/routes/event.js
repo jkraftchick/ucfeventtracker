@@ -247,4 +247,13 @@ router.patch("/leave/:id", ensureAuth, async (req, res, next) => {
 	})
 })
 
+router.patch("/comment/:id", ensureAuth, async (req, res, next) => {
+	if (!req.params.id) return res.status(400).send("missing id");
+
+	Events.findByIdAndUpdate(req.params.id, { $push: { comments: req.body.comment } }, { useFindAndModify: false, new: true, populate: {path:'users', select: 'firstName lastName _id'} }, (dberr, dbres) => {
+		if (dberr) return res.status(400).send(dberr);
+		res.send(dbres);
+	})
+})
+
 module.exports = router;

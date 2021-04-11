@@ -58,16 +58,13 @@ export function Dashboard() {
 						/>
 						{new Date(event.starts).toLocaleString()} - {new Date(event.ends).toLocaleString()}
 						<br />
-
-						<br />
-						{event.subtitle}
-						<Paper style={{ maxHeight: 200, overflow: 'auto', margin: 2 }} elevation={0}>
+						{/* <Paper style={{ maxHeight: 200, overflow: 'auto', margin: 2 }} elevation={0}>
 							{event.description}
-						</Paper>
-						{event.contact_name}
+						</Paper> */}
+						{/* {event.contact_name}
 						<br />
 						{event.contact_email}, {event.contact_phone}
-						<br />
+						<br /> */}
 
 						<Button variant="contained" color="primary"
 							onClick={() => history.push(`/event/${event._id}`)}

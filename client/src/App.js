@@ -17,8 +17,11 @@ import LockOutlinedIcon from '@material-ui/icons/LockOutlined';
 import DashboardIcon from '@material-ui/icons/Dashboard';
 import ExitToAppIcon from '@material-ui/icons/ExitToApp';
 
-import { Dashboard } from './components/Dashboard';
 import { useAuth, useProvideAuth, authContext } from './components/Auth';
+
+import { Dashboard } from './components/Dashboard';
+import { Rso } from './components/Rso';
+import { NewRso } from './components/newRso';
 import { Event } from './components/Event';
 import { NewEvent } from './components/newEvent';
 // import 'leaflet/dist/leaflet.css';
@@ -86,13 +89,20 @@ export default function App() {
 						<LeftNavLayout />
 						<Dashboard />
 					</PrivateRoute>
+					<PrivateRoute exact path="/rso">
+						<LeftNavLayout />
+						<Rso />
+					</PrivateRoute>
+					<PrivateRoute exact path="/newrso" role={["superadmin"]}>
+						<LeftNavLayout />
+						<NewRso />
+					</PrivateRoute>
 					<PrivateRoute exact path="/event/:id">
 						<LeftNavLayout />
 						<Event />
 					</PrivateRoute>
 					<PrivateRoute exact path="/newevent" role={["admin", "superadmin"]}>
 						<LeftNavLayout />
-						{/* <p>test </p> */}
 						<NewEvent />
 					</PrivateRoute>
 
@@ -165,19 +175,10 @@ function PrivateRoute({ children, role, ...rest }) {
 const FrontPage = (props) => {
 	const auth = useAuth();
 	const history = useHistory();
-	const [data, setData] = useState("not loaded");
 	const classes = useStyles();
 
 
 	if (auth.token) history.push('/dashboard');
-
-	useEffect(() => {
-		axios.get('/api/testAPI')
-			.then(res => {
-				console.log(res.data);
-				setData(res.data);
-			})
-	}, [])
 
 	return (
 		<>
@@ -190,19 +191,8 @@ const FrontPage = (props) => {
 					</div>
 				</Toolbar>
 			</AppBar>
-			<h3>{data}</h3>
-
-			<MapContainer center={[51.505, -0.09]} zoom={13} style={{ width: 300, height: 300 }}>
-				<TileLayer
-					attribution='&copy; <a href="http://osm.org/copyright">OpenStreetMap</a> contributors'
-					url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-				/>
-				<Marker position={[51.505, -0.09]}>
-					<Popup>
-						A pretty CSS3 popup. <br /> Easily customizable.
-    				</Popup>
-				</Marker>
-			</MapContainer>
+		
+			ucfeventtracker
 		</>
 	);
 }
@@ -218,9 +208,12 @@ const LeftNavLayout = () => {
 			<Toolbar>
 				<Typography className={classes.menuText}>ucfeventtracker</Typography>
 				<div className={classes.menuButton}>
-					{location.pathname == '/dashboard' && (auth.user?.role === 'superadmin' || auth.user?.role === 'admin') &&
+					{location.pathname != '/newevent' && (auth.user?.role === 'superadmin' || auth.user?.role === 'admin') &&
 						<Button href="/newevent"> New Event </Button>}
+					{location.pathname != '/newrso' && (auth.user?.role === 'superadmin') &&
+						<Button href="/newrso"> New Rso </Button>}
 					{location.pathname !== '/dashboard' && <Button href="/dashboard"> Dashboard </Button>}
+					{location.pathname !== '/rso' && <Button href="/rso"> RSO Dashboard </Button>}
 					<Button href="/" onClick={() => { auth.signout() }}>Sign Out</Button>
 				</div>
 			</Toolbar>

@@ -26,7 +26,8 @@ const EventSchema = new Schema({
 		refPath: 'access_type'
 	},
 
-	users: [{ type: Schema.Types.ObjectId, ref: 'user' }]
+	users: [{ type: Schema.Types.ObjectId, ref: 'user' }],
+	comments: [String]
 });
 
 module.exports = mongoose.model('event', EventSchema);
