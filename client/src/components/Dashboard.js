@@ -56,22 +56,18 @@ export function Dashboard() {
 							title={event.title}
 							subheader={`${event.subtitle} : ${event.access_type}`}
 						/>
-						{new Date(event.starts).toLocaleString()} - {new Date(event.ends).toLocaleString()}
-						<br />
-						{/* <Paper style={{ maxHeight: 200, overflow: 'auto', margin: 2 }} elevation={0}>
-							{event.description}
-						</Paper> */}
-						{/* {event.contact_name}
-						<br />
-						{event.contact_email}, {event.contact_phone}
-						<br /> */}
+						<CardContent>
+							{new Date(event.starts).toLocaleString()} - {new Date(event.ends).toLocaleString()}
+						</CardContent>
 
-						<Button variant="contained" color="primary"
-							onClick={() => history.push(`/event/${event._id}`)}
+						<CardActions>
+							<Button variant="contained" color="primary"
+								onClick={() => history.push(`/event/${event._id}`)}
 
-						>
-							Go to event page
-						</Button>
+							>
+								Go to event page
+							</Button>
+						</CardActions>
 					</Card>
 				))}
 			</Paper>
