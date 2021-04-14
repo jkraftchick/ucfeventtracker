@@ -10,6 +10,15 @@ export function useProvideAuth() {
 	const [token, setToken] = useState(localStorage.getItem('token'));
 	const [user, setUser] = useState(JSON.parse(localStorage.getItem('user')));
 
+	const addSchool = (school, cb) => {
+		let _user = { ...user };
+		_user.school = school;
+		setUser(_user);
+		localStorage.setItem('user', JSON.stringify(_user));
+
+		cb(_user);
+	}
+
 	const signin = (data, cb) => {
 		localStorage.setItem('token', data.token);
 		localStorage.setItem('user', JSON.stringify(data.user));
@@ -32,6 +41,7 @@ export function useProvideAuth() {
 		token,
 		user,
 		signin,
-		signout
+		signout,
+		addSchool
 	};
 }

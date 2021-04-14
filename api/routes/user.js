@@ -16,7 +16,6 @@ router.get("/self", (req, res, next) => {
 		if (err) return res.status(400).send("invalid auth token");
 
 		let user = await User.findById(decoded._id);
-		console.log(user);
 
 		return res.send(user);
 	})
@@ -46,6 +45,7 @@ router.post('/login', async (req, res) => {
 						firstName: user.firstName,
 						lastName: user.lastName,
 						role: user.role,
+						school: user.school,
 						_id: user._id
 					}
 				});
@@ -54,6 +54,7 @@ router.post('/login', async (req, res) => {
 });
 
 router.post('/signup', async (req, res) => {
+
 	const { firstName, lastName, username, password } = req.body;
 
 	// Simple validation
@@ -61,56 +62,37 @@ router.post('/signup', async (req, res) => {
 		return res.status(400).json({ msg: 'Please enter all fields' });
 	}
 
-	// Create User
-	try {
-		User.findOne({ username: username },
-			async function (err, user) {
-				try {
-					if (err) return res.status(400).send(err);
+	let _user = await User.findOne({ username: username });
 
-					if (user) return res.status(400).send('User already exists');
-
-					// TODO: decide on security or not... prob not lol
-					//const salt = await bcrypt.genSalt(10);
-					//if (!salt) return res.status(400).send('Bcrypt salt error');
-
-					//const hash = await bcrypt.hash(password, salt);
-					//if (!hash) return res.status(400).send('Bcrypt hash error');
-
-					const newUser = new User({
-						firstName,
-						lastName,
-						username,
-						password,
-						role: "student"
-					});
-
-					const savedUser = await newUser.save();
-					if (!savedUser) return res.status(400).send('Something went wrong saving the user');
-
-					jwt.sign({ _id: savedUser._id }, jwtconfig.secret, { expiresIn: '69 days' }, (err, token) => {
-						if (err) return res.status(400).send(err);
-
-						return res.status(200).json({
-							token,
-
-							user: {
-								username: savedUser.username,
-								firstName: savedUser.firstName,
-								lastName: savedUser.lastName,
-								role: savedUser.role,
-								_id: user._id
-							}
-						});
-					});
-
-				} catch (e) {
-					res.status(400).json({ err: e.message });
-				}
-			});
-	} catch (e) {
-		res.status(400).json({ err: e.message });
+	if (_user) {
+		return res.status(400).send({ msg: "user already exists" });
 	}
+
+	const newUser = new User({
+		firstName,
+		lastName,
+		username,
+		password,
+		role: "student"
+	});
+
+	const savedUser = await newUser.save();
+	if (!savedUser) return res.status(400).send('Something went wrong saving the user');
+
+	jwt.sign({ _id: savedUser._id }, jwtconfig.secret, { expiresIn: '69 days' }, (err, token) => {
+		if (err) return res.status(400).send("failed to make token");
+
+		return res.json({
+			token: token,
+			user: {
+				username: savedUser.username,
+				firstName: savedUser.firstName,
+				lastName: savedUser.lastName,
+				role: savedUser.role,
+				_id: savedUser._id
+			}
+		});
+	})
 });
 
 router.post('/upgrade', (req, res) => {

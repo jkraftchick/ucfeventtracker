@@ -67,11 +67,28 @@ export const NewEvent = () => {
 	const [contact_phone, setContact_phone] = useState("");
 	const [contact_email, setContact_email] = useState("");
 	const [url, setUrl] = useState("");
-	const [level, setLevel] = useState("public");
+	const [level, setLevel] = useState(auth.user.role === 'admin' ? "rso" : "public");
+	const [access, setAccess] = useState("");
 
 
-	const [lastname, setLastname] = useState("");
 	const [error, setError] = useState()
+	const [rsos, setRsos] = useState([])
+
+	useEffect(() => {
+		console.log(auth.user._id);
+		axios.get(`/api/rso/${auth.user._id}`, {
+			headers: {
+				'Authorization': `Token ${auth.token}`
+			}
+		})
+			.then(data => {
+				console.log(data.data);
+				setRsos(data.data);
+			})
+			.catch(err => {
+				console.log(err);
+			})
+	}, [])
 
 	let create = () => {
 
@@ -87,6 +104,7 @@ export const NewEvent = () => {
 			contact_email: contact_email,
 			url: url,
 			access_type: level,
+			access: access
 		}, {
 			headers: {
 				'Authorization': `Token ${auth.token}`
@@ -96,9 +114,10 @@ export const NewEvent = () => {
 				history.push(`/event/${data.data._id}`)
 			})
 			.catch(err => {
-				setError("failed to make account");
+				setError("failed to make event");
 			})
 	};
+
 
 	useEffect(() => {
 		if (title === "") setError("Missing title");
@@ -160,15 +179,35 @@ export const NewEvent = () => {
 					value={subtitle}
 					onChange={e => setSubtitle(e.target.value)}
 				/>
+				{auth.user?.role === 'superadmin' && <>
 				<Typography>Select Event Visibility</Typography >
 				<Select
 					value={level}
-					onChange={(e) => setLevel(e.target.value)}
+					onChange={(e) => {
+						setLevel(e.target.value)
+						if (e.target.value === 'public') setAccess("");
+						else if (e.target.value === 'school') setAccess(auth.user.school);
+						else if (e.target.value === 'rso') setAccess(rsos[0]._id);
+					}
+					}
 				>
 					<MenuItem value={'public'}>Public</MenuItem>
 					<MenuItem value={'school'}>School</MenuItem>
 					<MenuItem value={'rso'}>RSO</MenuItem>
 				</Select>
+				</>}
+
+				{level === 'rso' &&
+					<Select
+						value={access}
+						onChange={(e) => setAccess(e.target.value)}
+					>
+						{rsos.map(rso => (
+							<MenuItem value={rso._id}>{rso.name}</MenuItem>
+						))}
+					</Select>
+				}
+
 				<br />
 				<TextField
 					variant="outlined"
@@ -273,7 +312,7 @@ export const NewEvent = () => {
 					className={classes.submit}
 					onClick={() => {
 						create()
-					}} 
+					}}
 					disabled={Boolean(error)}
 				>
 					Create Event

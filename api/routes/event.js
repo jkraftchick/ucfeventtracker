@@ -39,16 +39,16 @@ router.get("/", async (req, res, next) => {
 
 			let search = { access_type: "public" }
 
-			console.log(user);
-
 			if (level === "school") {
-				search = { $or: [{ access_type: "public" }, { access_type: "school", access: user.school }] }
+				//search = { $or: [{ access_type: "public" }, { access_type: "school", access: user.school }] }
+				search = { access_type: "school", access: user.school };
 			}
 			else if (level === "rso") {
-				search = { $or: [{ access_type: "public" }, { access_type: "school", access: user.school }, { access_type: "rso", access: { $in: user.rsos } }] }
+				//search = { $or: [{ access_type: "public" }, { access_type: "school", access: user.school }, { access_type: "rso", access: { $in: user.rsos } }] }
+				search = { access_type: "rso", access: { $in: user.rsos } }
 			}
 
-			Events.find(search).populate('users', 'firstName lastName _id').exec((err, events) => {
+			Events.find(search).populate('users', 'firstName lastName _id').populate('access', 'name').exec((err, events) => {
 				if (err) return res.status(500).send(err);
 
 				return res.send(events);
@@ -74,14 +74,10 @@ router.get("/", async (req, res, next) => {
 router.post("/", async (req, res, next) => {
 	const { access_type, access, title, subtitle, description, location, starts, ends, contact_name, contact_phone, contact_email, url } = req.body;
 
-	console.log(req.body);
-
 	let auth = req.headers.authorization;
 	if (!auth) return res.status(400).send("missing auth token");
 
 	let token = auth.split(' ')[1];
-
-	console.log('here pre jwt');
 
 	jwt.verify(token, jwtconfig.secret, async (err, decoded) => {
 		if (err) return res.status(400).send("invalid auth token");
@@ -99,7 +95,6 @@ router.post("/", async (req, res, next) => {
 
 			let rso = await Rsos.findById(access);
 
-			//console.log(rso.admin, user._id, rso.admin.toString() == user._id.toString());
 			if (!rso.admin.equals(user._id)) {
 				return res.status(400).send("you must be the rso admin to create an event");
 			}
@@ -154,12 +149,9 @@ router.post("/", async (req, res, next) => {
 			return res.send(event);
 		}
 		else if (access_type === 'public') {
-			console.log('here');
 			if (user.role !== "superadmin") {
 				return res.status(400).send("you must be a super admin to create public events");
 			}
-
-			console.log('event');
 
 			let event = new Events({
 				title,

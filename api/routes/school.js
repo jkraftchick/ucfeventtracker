@@ -75,4 +75,30 @@ router.delete("/:id", ensureAuth, async (req, res, next) => {
 	return res.send(`School ${id} was successfuly deleted`);
 })
 
+router.patch("/join/:id", ensureAuth, async (req, res, next) => {
+	if (!req.params.id) return res.status(400).send("missing id");
+
+	School.findByIdAndUpdate(req.params.id, { $push: { students: req.body.user } }, { useFindAndModify: false, new: true }, (dberr, dbres) => {
+		if (dberr) return res.status(400).send(dberr);
+		//res.send(dbres);
+
+		Users.findByIdAndUpdate(req.body.user, { school: req.params.id }, { useFindAndModify: false, new: true }, (dberr, dbres) => {
+			if (dberr) return res.status(400).send(dberr);
+			//res.send(dbres);
+			return res.send('ok')
+		})
+	})
+
+	
+})
+
+// router.patch("/leave/:id", ensureAuth, async (req, res, next) => {
+// 	if (!req.params.id) return res.status(400).send("missing id");
+
+// 	School.findByIdAndUpdate(req.params.id, { $pull: { students: req.body.user } }, { useFindAndModify: false, new: true }, (dberr, dbres) => {
+// 		if (dberr) return res.status(400).send(dberr);
+// 		res.send(dbres);
+// 	})
+// })
+
 module.exports = router;

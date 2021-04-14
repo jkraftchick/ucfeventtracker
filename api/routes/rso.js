@@ -42,7 +42,7 @@ router.post("/", async (req, res, next) => {
 			_school = user.school;
 		}
 
-		if (user.role !== 'superadmin') {
+		if (user.role !== 'superadmin' && user.role !== 'admin') {
 			return res.status(400).send("no permissions to create rso");
 		}
 
@@ -75,7 +75,28 @@ router.get("/", async (req, res, next) => {
 
 
 
-		Rsos.find({school:user.school}, {useFindAndModify:false}, (err, _res) => {
+		Rsos.find({ school: user.school }, { useFindAndModify: false }, (err, _res) => {
+			if (err) return res.status(400).send(err);
+
+			return res.send(_res);
+		})
+	})
+})
+
+router.get("/:id", async (req, res, next) => {
+	let auth = req.headers.authorization;
+	if (!auth) return res.status(400).send("missing auth token");
+
+	let token = auth.split(' ')[1];
+
+	jwt.verify(token, jwtconfig.secret, async (err, decoded) => {
+		if (err) return res.status(400).send("invalid auth token");
+
+		let user = await Users.findById(decoded._id);
+
+
+
+		Rsos.find({ school: user.school, admin: req.params.id }, { useFindAndModify: false }, (err, _res) => {
 			if (err) return res.status(400).send(err);
 
 			return res.send(_res);
@@ -88,7 +109,12 @@ router.patch("/join/:id", ensureAuth, async (req, res, next) => {
 
 	Rsos.findByIdAndUpdate(req.params.id, { $push: { students: req.body.user } }, { useFindAndModify: false, new: true }, (dberr, dbres) => {
 		if (dberr) return res.status(400).send(dberr);
-		res.send(dbres);
+
+		Users.findByIdAndUpdate(req.body.user, { $push: { rsos: req.params.id } }, { useFindAndModify: false, new: true }, (dberr, dbres2) => {
+			if (dberr) return res.status(400).send(dberr);
+			//res.send(dbres);
+			return res.send(dbres)
+		})
 	})
 })
 
@@ -97,7 +123,12 @@ router.patch("/leave/:id", ensureAuth, async (req, res, next) => {
 
 	Rsos.findByIdAndUpdate(req.params.id, { $pull: { students: req.body.user } }, { useFindAndModify: false, new: true }, (dberr, dbres) => {
 		if (dberr) return res.status(400).send(dberr);
-		res.send(dbres);
+
+		Users.findByIdAndUpdate(req.body.user, { $pull: { rsos: req.params.id } }, { useFindAndModify: false, new: true }, (dberr, dbres2) => {
+			if (dberr) return res.status(400).send(dberr);
+			//res.send(dbres);
+			return res.send(dbres)
+		})
 	})
 })
 

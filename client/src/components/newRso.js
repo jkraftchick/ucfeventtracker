@@ -73,7 +73,7 @@ export const NewRso = () => {
 			}
 		})
 			.then(data => {
-				console.log(data);
+				// console.log(data);
 			})
 			.catch(err => {
 				setError("failed to make account");

@@ -24,6 +24,7 @@ import { Rso } from './components/Rso';
 import { NewRso } from './components/newRso';
 import { Event } from './components/Event';
 import { NewEvent } from './components/newEvent';
+import { School } from './components/School';
 // import 'leaflet/dist/leaflet.css';
 import { MapContainer, TileLayer, Marker, Popup } from 'react-leaflet'
 
@@ -72,6 +73,8 @@ const useStyles = makeStyles((theme) => ({
 }));
 
 export default function App() {
+	let auth = useProvideAuth();
+
 	return (
 		<ProvideAuth>
 			<Router>
@@ -87,13 +90,16 @@ export default function App() {
 					</Route>
 					<PrivateRoute exact path="/dashboard">
 						<LeftNavLayout />
-						<Dashboard />
+						{auth.user?.school != null ?
+							<Dashboard /> :
+							<School />
+						}
 					</PrivateRoute>
 					<PrivateRoute exact path="/rso">
 						<LeftNavLayout />
 						<Rso />
 					</PrivateRoute>
-					<PrivateRoute exact path="/newrso" role={["superadmin"]}>
+					<PrivateRoute exact path="/newrso" role={["admin", "superadmin"]}>
 						<LeftNavLayout />
 						<NewRso />
 					</PrivateRoute>
@@ -134,10 +140,6 @@ function ProvideAuth({ children }) {
 // screen if you're not yet authenticated.
 function PrivateRoute({ children, role, ...rest }) {
 	let auth = useAuth();
-
-	if (role) {
-		console.log('has role option')
-	}
 
 	return (
 		<Route
@@ -191,8 +193,14 @@ const FrontPage = (props) => {
 					</div>
 				</Toolbar>
 			</AppBar>
-		
-			ucfeventtracker
+
+			<Container style={{ margin: 25 }}>
+				<Typography variant="h1">ucfeventtracker</Typography>
+				<Typography variant="h4">a project by Josh Kraftchick and Joseph Mansy</Typography>
+				<Typography variant="h4">COP 4710</Typography>
+				<Typography variant="h4">Spring 2021</Typography>
+			</Container>
+
 		</>
 	);
 }
@@ -202,18 +210,19 @@ const LeftNavLayout = () => {
 	let location = useLocation();
 	let auth = useAuth();
 	const classes = useStyles();
-	console.log(auth);
+
 	return (
 		<AppBar position="static">
 			<Toolbar>
 				<Typography className={classes.menuText}>ucfeventtracker</Typography>
 				<div className={classes.menuButton}>
+					{auth.user?.role === "student" && <Button>Request New RSO</Button>}
 					{location.pathname != '/newevent' && (auth.user?.role === 'superadmin' || auth.user?.role === 'admin') &&
 						<Button href="/newevent"> New Event </Button>}
-					{location.pathname != '/newrso' && (auth.user?.role === 'superadmin') &&
+					{location.pathname != '/newrso' && (auth.user?.role === 'superadmin' || auth.user?.role === 'admin') &&
 						<Button href="/newrso"> New Rso </Button>}
 					{location.pathname !== '/dashboard' && <Button href="/dashboard"> Dashboard </Button>}
-					{location.pathname !== '/rso' && <Button href="/rso"> RSO Dashboard </Button>}
+					{location.pathname !== '/rso' && auth.user?.school && <Button href="/rso"> RSO Dashboard </Button>}
 					<Button href="/" onClick={() => { auth.signout() }}>Sign Out</Button>
 				</div>
 			</Toolbar>
@@ -242,9 +251,6 @@ const LoginPage = () => {
 
 		axios.post("/api/users/login", { username: username, password: password })
 			.then(res => {
-				//alert(JSON.stringify(res.data))
-				console.log('login', res);
-
 				auth.signin(res.data, () => {
 					history.replace(from);
 				});
@@ -335,14 +341,8 @@ const SignupPage = () => {
 	const [error, setError] = useState()
 
 	let signup = () => {
-
-		//alert(username + ' ' + password)
-
-		axios.post("/api/users/signup", { username: username, password: password, firstname: firstname, lastname: lastname })
+		axios.post("/api/users/signup", { username: username, password: password, firstName: firstname, lastName: lastname })
 			.then(res => {
-				//alert(JSON.stringify(res.data))
-				// console.log(res);
-
 				auth.signin(res.data, () => {
 					history.replace(from);
 				});
@@ -444,7 +444,7 @@ const SignupPage = () => {
 					onClick={() => signup()}
 					disabled={Boolean(error)}
 				>
-					Sign In
+					Sign up
 				</Button>
 			</div>
 		</Container >
