@@ -1,0 +1,22 @@
+To start the program,
+
+Unzip ucfeventtracker
+
+navigate to /api
+
+run npm install
+run npm start
+
+navigate to /client
+
+run npm install
+run npm start
+
+this should start a express server on http://localhost:5000
+and a react server on http://localhost:3000
+
+navigate to http://localhost:3000 in a webbroser to open the website
+
+the database is a remote db hosted on MongoDB Atlas and the express server should connect to it
+
+log in with username superadmin and password password
